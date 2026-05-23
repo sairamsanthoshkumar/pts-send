@@ -1,0 +1,10 @@
+from fastapi import APIRouter
+from app.api.v1.endpoints import studies, ingestion, transformation, validation, reports, auth
+
+api_router = APIRouter()
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(studies.router, prefix="/studies", tags=["studies"])
+api_router.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
+api_router.include_router(transformation.router, prefix="/transformation", tags=["transformation"])
+api_router.include_router(validation.router, prefix="/validation", tags=["validation"])
+api_router.include_router(reports.router, prefix="/reports", tags=["reports"])

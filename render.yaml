@@ -1,0 +1,107 @@
+# render.yaml — Deploy PtsSEND to Render.com
+# Commit this file to your GitHub repo root.
+# On Render dashboard: New → Blueprint → connect repo → done.
+
+services:
+
+  # ── Backend (FastAPI) ─────────────────────────────────────
+  - type: web
+    name: pts-send-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_SECRET_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pts-send-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: pts-send-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: pts-send-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: pts-send-redis
+          property: connectionString
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: pts-send-frontend
+          property: host
+          envVarPrefix: https://
+      - key: CORS_ORIGINS
+        value: '["https://pts-send-frontend.onrender.com","http://localhost:5173"]'
+
+  # ── Celery Worker ─────────────────────────────────────────
+  - type: worker
+    name: pts-send-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    startCommand: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pts-send-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: pts-send-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: pts-send-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: pts-send-redis
+          property: connectionString
+
+  # ── Frontend (React static site) ─────────────────────────
+  - type: web
+    name: pts-send-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: pts-send-backend
+          property: host
+          envVarPrefix: https://
+
+# ── PostgreSQL (free, open-source) ───────────────────────
+databases:
+  - name: pts-send-db
+    plan: free
+    databaseName: ptssend
+    user: ptssend
+
+# ── Redis ─────────────────────────────────────────────────
+  - type: redis
+    name: pts-send-redis
+    plan: free
+    maxmemoryPolicy: noeviction
