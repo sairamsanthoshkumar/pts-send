@@ -2,8 +2,23 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
+
+def _get_async_db_url() -> str:
+    """
+    Render injects DATABASE_URL as  postgres://...  or  postgresql://...
+    SQLAlchemy asyncpg requires    postgresql+asyncpg://...
+    This function normalises it regardless of which config.py is deployed.
+    """
+    url = settings.DATABASE_URL
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 engine = create_async_engine(
-    settings.ASYNC_DATABASE_URL,   # ← was settings.DATABASE_URL (psycopg2, not async)
+    _get_async_db_url(),
     echo=False,
     pool_pre_ping=True,
 )
