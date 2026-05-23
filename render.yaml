@@ -8,7 +8,10 @@ services:
     plan: free
     ipAllowList: []
 
-  # ── Backend (FastAPI) ──────────────────────────────────────
+  # ── Backend (FastAPI + Celery inline) ─────────────────────
+  # Background worker type requires paid plan on Render free tier.
+  # Solution: run Celery worker in the same container as FastAPI
+  # using a startup shell script (start.sh) that launches both.
   - type: web
     name: pts-send-backend
     runtime: docker
@@ -45,37 +48,7 @@ services:
       - key: CORS_ORIGINS
         value: '["https://pts-send-frontend.onrender.com","http://localhost:5173"]'
 
-  # ── Celery Worker ──────────────────────────────────────────
-  # runtime: docker must NOT have startCommand — CMD is in Dockerfile.worker
-  - type: worker
-    name: pts-send-worker
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile.worker
-    dockerContext: ./backend
-    plan: free
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: pts-send-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: pts-send-redis
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          type: keyvalue
-          name: pts-send-redis
-          property: connectionString
-      - key: CELERY_RESULT_BACKEND
-        fromService:
-          type: keyvalue
-          name: pts-send-redis
-          property: connectionString
-
   # ── Frontend (React static site) ──────────────────────────
-  # Static sites must NOT have a plan field — remove it entirely
   - type: web
     name: pts-send-frontend
     runtime: static
