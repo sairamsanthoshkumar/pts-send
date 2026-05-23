@@ -46,8 +46,7 @@ services:
         value: '["https://pts-send-frontend.onrender.com","http://localhost:5173"]'
 
   # ── Celery Worker ──────────────────────────────────────────
-  # startCommand is NOT allowed with runtime: docker
-  # CMD is set in Dockerfile.worker instead
+  # runtime: docker must NOT have startCommand — CMD is in Dockerfile.worker
   - type: worker
     name: pts-send-worker
     runtime: docker
@@ -76,12 +75,12 @@ services:
           property: connectionString
 
   # ── Frontend (React static site) ──────────────────────────
+  # Static sites must NOT have a plan field — remove it entirely
   - type: web
     name: pts-send-frontend
     runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
-    plan: free
     routes:
       - type: rewrite
         source: /*
