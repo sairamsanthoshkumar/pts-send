@@ -9,9 +9,6 @@ services:
     ipAllowList: []
 
   # ── Backend (FastAPI + Celery inline) ─────────────────────
-  # Background worker type requires paid plan on Render free tier.
-  # Solution: run Celery worker in the same container as FastAPI
-  # using a startup shell script (start.sh) that launches both.
   - type: web
     name: pts-send-backend
     runtime: docker
@@ -49,22 +46,17 @@ services:
         value: '["https://pts-send-frontend.onrender.com","http://localhost:5173"]'
 
   # ── Frontend (React static site) ──────────────────────────
+  # VITE_API_URL must be a hardcoded value — fromService doesn't resolve
+  # at static build time. Use the known backend URL directly.
   - type: web
     name: pts-send-frontend
     runtime: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && VITE_API_URL=https://pts-send-backend.onrender.com npm run build
     staticPublishPath: ./frontend/dist
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: pts-send-backend
-          property: host
-          envVarPrefix: https://
 
 # ── PostgreSQL ─────────────────────────────────────────────
 databases:
