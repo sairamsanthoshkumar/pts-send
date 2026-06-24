@@ -1,32 +1,30 @@
 import axios from 'axios'
-
 const BASE = import.meta.env.VITE_API_URL || ''
 export const api = axios.create({ baseURL: `${BASE}/api/v1`, headers: { 'Content-Type': 'application/json' } })
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-api.interceptors.response.use((res) => res, (err) => {
-  if (err.response?.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/login' }
-  return Promise.reject(err)
-})
-
-export const login = (email: string, password: string) => api.post('/auth/login', { email, password })
-export const getStudies = () => api.get('/studies/')
+api.interceptors.request.use(cfg => { const t = localStorage.getItem('access_token'); if (t) cfg.headers.Authorization = `Bearer ${t}`; return cfg })
+api.interceptors.response.use(r => r, err => { if (err.response?.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/login' } return Promise.reject(err) })
+export const login = (e: string, p: string) => api.post('/auth/login', { email: e, password: p })
+export const getStudies = (params?: Record<string,string>) => api.get('/studies/', { params })
 export const getStudy = (id: string) => api.get(`/studies/${id}`)
-export const createStudy = (data: Record<string, unknown>) => api.post('/studies/', data)
-export const updateStudy = (id: string, data: Record<string, unknown>) => api.patch(`/studies/${id}`, data)
-export const deleteStudy = (id: string) => api.delete(`/studies/${id}`)
-export const uploadFile = (studyId: string, file: File, domainHint = 'AUTO') => {
-  const form = new FormData(); form.append('file', file); form.append('domain_hint', domainHint)
-  return api.post(`/ingestion/${studyId}/upload`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
-}
-export const getTaskStatus = (taskId: string) => api.get(`/ingestion/task/${taskId}`)
-export const runTransformation = (studyId: string, domainCodes: string[]) => api.post(`/transformation/${studyId}/run`, { domain_codes: domainCodes })
-export const getDomains = (studyId: string) => api.get(`/transformation/${studyId}/domains`)
-export const runValidation = (studyId: string, domainCodes: string[]) => api.post(`/validation/${studyId}/run`, { domain_codes: domainCodes })
-export const getValidationResults = (studyId: string) => api.get(`/validation/${studyId}/results`)
-export const generatePackage = (studyId: string) => api.post(`/reports/${studyId}/package`, { include_define_xml: true, include_sdrg: true, include_xpt: true })
-export const getAuditTrail = (studyId: string) => api.get(`/reports/${studyId}/audit-trail`)
+export const createStudy = (data: Record<string,unknown>) => api.post('/studies/', data)
+export const updateStudy = (id: string, data: Record<string,unknown>, reason?: string) => api.patch(`/studies/${id}`, data, { params: reason ? { reason } : {} })
+export const deleteStudy = (id: string, reason?: string) => api.delete(`/studies/${id}`, { params: reason ? { reason } : {} })
+export const approveDataset = (id: string, comment: string) => api.post(`/reports/${id}/approve`, null, { params: { comment } })
+export const getGroups = (sid: string) => api.get(`/studies/${sid}/groups`)
+export const createGroup = (sid: string, d: Record<string,unknown>) => api.post(`/studies/${sid}/groups`, d)
+export const getAnimals = (sid: string) => api.get(`/studies/${sid}/animals`)
+export const uploadFile = (sid: string, file: File, hint = 'AUTO') => { const f = new FormData(); f.append('file', file); f.append('domain_hint', hint); return api.post(`/ingestion/${sid}/upload`, f, { headers: { 'Content-Type': 'multipart/form-data' } }) }
+export const getTaskStatus = (tid: string) => api.get(`/ingestion/task/${tid}`)
+export const getSendDomains = () => api.get('/transformation/domains')
+export const runTransformation = (sid: string, codes: string[], fmt = 'XPT') => api.post(`/transformation/${sid}/run`, { domain_codes: codes, output_format: fmt })
+export const getStudyDomains = (sid: string) => api.get(`/transformation/${sid}/domains`)
+export const getCTCodelists = () => api.get('/ct/codelists')
+export const getCTMappings = (params?: Record<string,string>) => api.get('/ct/mappings', { params })
+export const updateCTMapping = (id: string, data: Record<string,unknown>) => api.patch(`/ct/mappings/${id}`, data)
+export const bulkMapCT = (domain: string, variable: string, sid?: string) => api.post('/ct/mappings/bulk-map', null, { params: { domain_code: domain, variable_name: variable, ...(sid ? { study_id: sid } : {}) } })
+export const getDomainTemplate = (code: string) => api.get(`/output-mapping/templates/${code}`)
+export const getOutputMappings = (sid: string) => api.get(`/output-mapping/${sid}`)
+export const runValidation = (sid: string, codes: string[]) => api.post(`/validation/${sid}/run`, { domain_codes: codes })
+export const getValidationResults = (sid: string) => api.get(`/validation/${sid}/results`)
+export const generatePackage = (sid: string, fmt = 'XPT') => api.post(`/reports/${sid}/package`, { include_define_xml: true, include_sdrg: true, include_xpt: true, output_format: fmt })
+export const getAuditTrail = (sid: string) => api.get(`/reports/${sid}/audit-trail`)

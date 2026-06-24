@@ -4,10 +4,11 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import StudiesPage from './pages/StudiesPage'
 import StudyDetailPage from './pages/StudyDetailPage'
+import CTPage from './pages/CTPage'
 import Layout from './components/common/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
   return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />
 }
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="studies" element={<StudiesPage />} />
           <Route path="studies/:id" element={<StudyDetailPage />} />
+          <Route path="ct" element={<CTPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

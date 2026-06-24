@@ -12,16 +12,12 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
-app = FastAPI(title="PtsSEND API", description="CDISC SEND Submission Management Platform", version="1.0.0", lifespan=lifespan)
-
-# Build dynamic CORS origins list
+app = FastAPI(title="PtsSEND API", description="CDISC SEND Submission Platform — based on Pristima Savante FS", version="2.0.0", lifespan=lifespan)
 origins = list(settings.CORS_ORIGINS)
-if settings.FRONTEND_URL:
-    origins.append(settings.FRONTEND_URL)
-
+if settings.FRONTEND_URL: origins.append(settings.FRONTEND_URL)
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health", tags=["health"])
 async def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status":"ok","version":"2.0.0"}

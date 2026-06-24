@@ -2,40 +2,47 @@ from functools import lru_cache
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_ENV: str = "development"
-    APP_SECRET_KEY: str = "change-me-in-production-use-long-random-string"
+    APP_SECRET_KEY: str = "change-me-in-production"
     APP_DEBUG: bool = False
 
-    # Database — Render injects DATABASE_URL automatically
+    # Render injects DATABASE_URL as  postgres://...
+    # We expose ASYNC_DATABASE_URL as  postgresql+asyncpg://...
     DATABASE_URL: str = "postgresql+asyncpg://ptssend:ptssend@localhost:5432/ptssend"
 
     @property
-    def DATABASE_URL_SYNC(self) -> str:
-        return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+    def ASYNC_DATABASE_URL(self) -> str:
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
-    # Redis — Render injects REDIS_URL automatically
+    # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
 
     # Auth
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 480
 
-    # CORS — set to your Render frontend URL in production
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000", "https://pts-send-frontend.onrender.com"]
-    FRONTEND_URL: str = ""
+    # CORS
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "https://pts-send-frontend.onrender.com",
+    ]
+    FRONTEND_URL: str = "https://pts-send-frontend.onrender.com"
 
-    # Celery
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
-
-    # Storage (local fallback uses /tmp)
-    STORAGE_BACKEND: str = "local"
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
 
 settings = get_settings()

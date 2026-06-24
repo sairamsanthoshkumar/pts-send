@@ -1,3 +1,4 @@
+"""FS10/FS11/FS13 – Study Load and Ingestion"""
 import uuid
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,13 +9,18 @@ from app.schemas.study import TaskResponse
 router = APIRouter()
 
 @router.post("/{study_id}/upload", response_model=TaskResponse)
-async def upload_raw_file(study_id: uuid.UUID, file: UploadFile = File(...), domain_hint: str = Form("AUTO"), db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def upload_raw_file(study_id: uuid.UUID, file: UploadFile = File(...),
+    domain_hint: str = Form("AUTO"), db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)):
     from app.models.study import Study
     study = await db.get(Study, study_id)
-    if not study:
-        raise HTTPException(status_code=404, detail="Study not found")
+    if not study: raise HTTPException(status_code=404, detail="Study not found")
+    allowed = {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-excel","text/csv"}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.content_type}")
+    contents = await file.read()
     from app.workers.tasks import ingest_file_task
-    task = ingest_file_task.delay(str(study_id), file.filename, domain_hint, current_user.get("sub"))
+    task = ingest_file_task.delay(str(study_id), file.filename, contents, domain_hint, current_user.get("sub"))
     return TaskResponse(task_id=task.id, status="queued", message=f"Ingestion queued for {file.filename}")
 
 @router.get("/task/{task_id}")

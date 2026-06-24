@@ -1,4 +1,5 @@
-# render.yaml — PtsSEND Blueprint for Render.com
+# render.yaml — PtsSEND v2 Blueprint for Render.com
+# Updated per Pristima Savante Functional Specification
 
 services:
 
@@ -46,8 +47,6 @@ services:
         value: '["https://pts-send-frontend.onrender.com","http://localhost:5173"]'
 
   # ── Frontend (React static site) ──────────────────────────
-  # VITE_API_URL must be a hardcoded value — fromService doesn't resolve
-  # at static build time. Use the known backend URL directly.
   - type: web
     name: pts-send-frontend
     runtime: static
