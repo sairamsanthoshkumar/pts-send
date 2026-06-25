@@ -5,12 +5,14 @@ import DashboardPage from './pages/DashboardPage'
 import StudiesPage from './pages/StudiesPage'
 import StudyDetailPage from './pages/StudyDetailPage'
 import CTPage from './pages/CTPage'
+import ConnectionPage from './pages/ConnectionPage'
 import Layout from './components/common/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
   return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />
 }
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -21,6 +23,7 @@ export default function App() {
           <Route path="studies" element={<StudiesPage />} />
           <Route path="studies/:id" element={<StudyDetailPage />} />
           <Route path="ct" element={<CTPage />} />
+          <Route path="setup/connection" element={<ConnectionPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
