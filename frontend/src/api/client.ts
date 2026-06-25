@@ -28,3 +28,8 @@ export const runValidation = (sid: string, codes: string[]) => api.post(`/valida
 export const getValidationResults = (sid: string) => api.get(`/validation/${sid}/results`)
 export const generatePackage = (sid: string, fmt = 'XPT') => api.post(`/reports/${sid}/package`, { include_define_xml: true, include_sdrg: true, include_xpt: true, output_format: fmt })
 export const getAuditTrail = (sid: string) => api.get(`/reports/${sid}/audit-trail`)
+
+// FS5 — Updated login with username (not email)
+export const loginWithCredentials = (username: string, password: string, language: string, dateFormat: string) =>
+  api.post('/auth/login', { username, password, language, date_format: dateFormat })
+export const getUserPreferences = (username: string) => api.get(`/auth/preferences/${username}`)
