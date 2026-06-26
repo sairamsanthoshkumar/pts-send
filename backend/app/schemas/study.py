@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 # ─── Study ───────────────────────────────────────────────────────────────────
 class StudyCreate(BaseModel):
-    savante_study_name: str
+    pts_study_name: str
     protocol_number: str
     import_study_name: Optional[str] = None
     species: Optional[str] = None
@@ -16,11 +16,11 @@ class StudyCreate(BaseModel):
     unique_subject_id_flag: bool = False
 
 class StudyUpdate(BaseModel):
-    savante_study_name: Optional[str] = None
+    pts_study_name: Optional[str] = None
     species: Optional[str] = None
     study_type: Optional[str] = None
     description: Optional[str] = None
-    savante_status: Optional[str] = None
+    study_status: Optional[str] = None
     protocol_status: Optional[str] = None
     dataset_approved: Optional[bool] = None
     dataset_approved_comment: Optional[str] = None
@@ -28,11 +28,11 @@ class StudyUpdate(BaseModel):
 
 class StudyResponse(BaseModel):
     id: uuid.UUID
-    savante_study_name: str
+    pts_study_name: str
     protocol_number: str
     import_study_name: Optional[str]
     protocol_status: Optional[str]
-    savante_status: str
+    study_status: str
     dataset_approved: bool
     dataset_approved_by: Optional[str]
     dataset_approved_comment: Optional[str]

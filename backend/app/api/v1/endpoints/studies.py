@@ -18,15 +18,15 @@ router = APIRouter()
 @router.get("/", response_model=List[StudyResponse])
 async def list_studies(
     name: Optional[str] = Query(None, description="Wildcard search on study name (FS8.1.1)"),
-    savante_status: Optional[str] = Query(None),
+    study_status: Optional[str] = Query(None),
     connection_type: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db), _=Depends(get_current_user)
 ):
     q = select(Study)
     if name:
-        q = q.where(or_(Study.savante_study_name.ilike(f"%{name}%"), Study.protocol_number.ilike(f"%{name}%")))
-    if savante_status:
-        q = q.where(Study.savante_status == savante_status)
+        q = q.where(or_(Study.pts_study_name.ilike(f"%{name}%"), Study.protocol_number.ilike(f"%{name}%")))
+    if study_status:
+        q = q.where(Study.study_status == study_status)
     if connection_type:
         q = q.where(Study.connection_type == connection_type)
     result = await db.execute(q.order_by(Study.created_at.desc()))
@@ -56,7 +56,7 @@ async def update_study(study_id: uuid.UUID, body: StudyUpdate,
     before = {k: getattr(s, k) for k in body.model_fields_set}
     for k, v in body.model_dump(exclude_unset=True).items(): setattr(s, k, v)
     # FS14 — audit trail required when Data Loaded
-    if s.savante_status in ("DataLoaded","Validated","Approved","Locked") and not reason:
+    if s.study_status in ("DataLoaded","Validated","Approved","Locked") and not reason:
         raise HTTPException(status_code=422, detail="Audit reason required for this study status (FS14.2.1)")
     db.add(AuditLog(study_id=study_id, user_id=current_user.get("sub"), action="UPDATE_STUDY",
                     resource_type="Study", resource_id=str(study_id), reason=reason,
@@ -70,7 +70,7 @@ async def delete_study(study_id: uuid.UUID,
     db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     s = await db.get(Study, study_id)
     if not s: raise HTTPException(status_code=404, detail="Study not found")
-    if s.savante_status in ("DataLoaded","Validated","Approved","Locked") and not reason:
+    if s.study_status in ("DataLoaded","Validated","Approved","Locked") and not reason:
         raise HTTPException(status_code=422, detail="Audit reason required to delete a loaded study (FS8.2.5)")
     db.add(AuditLog(study_id=None, user_id=current_user.get("sub"), action="DELETE_STUDY",
                     resource_type="Study", resource_id=str(study_id), reason=reason))

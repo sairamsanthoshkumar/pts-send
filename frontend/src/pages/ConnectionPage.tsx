@@ -37,7 +37,7 @@ const URL_PLACEHOLDER: Record<ConnectorType, string> = {
   SEND_DATASET:  'C:\\SENDDatasets\\  or  /data/send/',
 }
 
-// ── Savante form field style ──────────────────────────────────────────────────
+// ── PtsSEND form field style ──────────────────────────────────────────────────
 const labelStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center',
   background: '#e8eef7', borderRight: '1px solid #c5d0e0',
@@ -191,7 +191,7 @@ export default function ConnectionPage() {
     <div className="min-h-screen" style={{ background: '#f0f4f8' }}>
       <div className="max-w-3xl mx-auto pt-8 px-4">
 
-        {/* Page card — white box matching Savante UI */}
+        {/* Page card — white box matching PtsSEND UI */}
         <div className="bg-white rounded border" style={{ borderColor: '#c5d0e0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
 
           {/* ── Section 1: Choose Connector Type ─────────────────────────── */}
@@ -215,7 +215,7 @@ export default function ConnectionPage() {
           {/* ── Section 2: Connection Administrator ──────────────────────── */}
           <div className="px-6 py-4">
             <div className="text-center text-sm font-medium mb-4 pb-1" style={{ color: '#374151', borderBottom: '1px solid #e5e7eb' }}>
-              Savante - Connection Administrator
+              PtsSEND - Connection Administrator
             </div>
 
             {/* FS7.2.1 — Connector Name dropdown */}

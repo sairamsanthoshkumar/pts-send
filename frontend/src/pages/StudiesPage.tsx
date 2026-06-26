@@ -1,6 +1,6 @@
 /**
- * FS8 — Savante: List of Studies
- * Matches the Savante studies grid with all search filters, action buttons, and grid columns.
+ * FS8 — PtsSEND: List of Studies
+ * Matches the PtsSEND studies grid with all search filters, action buttons, and grid columns.
  */
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -13,7 +13,7 @@ import type { Study } from '../types'
 interface StudyJob {
   id: string
   original_study_name: string
-  savante_study_name: string
+  pts_study_name: string
   measurements: string       // comma-joined list
   job_created: string        // DD-MMM-YYYY
   status: string             // Done | In Progress | Failed | Aborted
@@ -31,7 +31,7 @@ const STATUS_OPTIONS  = ['Done', 'In Progress', 'Failed', 'Aborted', 'Queued']
 const TYPE_OPTIONS    = ['Pristima API', 'CSV Data Source', 'SEND Dataset', 'OpenVMS']
 const CONNECTOR_OPTIONS = ['Pristima API', 'CSV Data Source', 'SEND Dataset', 'OpenVMS']
 
-// ── Shared UI styles (Savante-like) ────────────────────────────────────────────
+// ── Shared UI styles (PtsSEND-style) ────────────────────────────────────────────
 const inputCls  = 'border border-gray-300 rounded px-2 py-1 text-sm text-gray-700 focus:outline-none focus:border-blue-400 bg-white'
 const btnOutline = 'border border-blue-500 text-blue-600 bg-white hover:bg-blue-50 px-3 py-1 text-sm rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
 const thCls     = 'px-3 py-2 text-xs font-semibold text-center bg-blue-700 text-white border-r border-blue-600 whitespace-nowrap'
@@ -39,16 +39,16 @@ const tdCls     = 'px-3 py-2 text-xs text-center border-b border-gray-200 align-
 
 // ── Mock data (matches the screenshot) ────────────────────────────────────────
 const MOCK_JOBS: StudyJob[] = [
-  { id:'1', original_study_name:'RFMDemo',       savante_study_name:'RFMDemo',        measurements:'Load Summary Data',                                                                                                                                                                                                                          job_created:'16-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
-  { id:'2', original_study_name:'Merge',         savante_study_name:'SavMerge',       measurements:'Gross Observations',                                                                                                                                                                                                                        job_created:'16-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
-  { id:'3', original_study_name:'sav_test3_study1', savante_study_name:'sav_test3_study1', measurements:'Body Weights,Generalized Measurement,Sample Collection',                                                                                                                                                                                 job_created:'15-SEP-2021', status:'',            download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
-  { id:'4', original_study_name:'bwstats',       savante_study_name:'bwstats',        measurements:'Mass Tracking',                                                                                                                                                                                                                             job_created:'15-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
-  { id:'5', original_study_name:'mg1',           savante_study_name:'mg1',            measurements:'Organ Weights',                                                                                                                                                                                                                             job_created:'14-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Closed', dataset_approved:false },
-  { id:'6', original_study_name:'mg',            savante_study_name:'mg',             measurements:'Organ Weights',                                                                                                                                                                                                                             job_created:'14-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Archived',dataset_approved:true,  dataset_approved_by:'admin' },
-  { id:'7', original_study_name:'va-indose3',    savante_study_name:'va-indose3',     measurements:'Indirect Dosing',                                                                                                                                                                                                                          job_created:'12-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
-  { id:'8', original_study_name:'va-indose1',    savante_study_name:'va-indose1',     measurements:'Indirect Dosing',                                                                                                                                                                                                                          job_created:'11-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
-  { id:'9', original_study_name:'XI42_Study',    savante_study_name:'XI42_Study',     measurements:'Adult Pathology,Body Weights,Cesarean Section,Direct Dosing,Empty Feeder Weights,Fetal Necropsy Observations,Full Feeder Weights,Generalized Measurement,Gross Observations,Mass Tracking,Mating Monitoring,Organ Weights,Parturition,Pup Necropsy observations,Sample Collection,Standard Clinical Observations,Time Bleed Collection,Uterine Exam', job_created:'09-SEP-2021', status:'Done', download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Closed', dataset_approved:false },
-  { id:'10',original_study_name:'XI42_Study2',   savante_study_name:'XI42_Study2',    measurements:'Body Weights,Empty Feeder Weights,Full Feeder Weights,Standard Clinical Observations',                                                                                                                                                       job_created:'09-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'1', original_study_name:'RFMDemo',       pts_study_name:'RFMDemo',        measurements:'Load Summary Data',                                                                                                                                                                                                                          job_created:'16-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'2', original_study_name:'Merge',         pts_study_name:'SavMerge',       measurements:'Gross Observations',                                                                                                                                                                                                                        job_created:'16-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'3', original_study_name:'sav_test3_study1', pts_study_name:'sav_test3_study1', measurements:'Body Weights,Generalized Measurement,Sample Collection',                                                                                                                                                                                 job_created:'15-SEP-2021', status:'',            download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'4', original_study_name:'bwstats',       pts_study_name:'bwstats',        measurements:'Mass Tracking',                                                                                                                                                                                                                             job_created:'15-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'5', original_study_name:'mg1',           pts_study_name:'mg1',            measurements:'Organ Weights',                                                                                                                                                                                                                             job_created:'14-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Closed', dataset_approved:false },
+  { id:'6', original_study_name:'mg',            pts_study_name:'mg',             measurements:'Organ Weights',                                                                                                                                                                                                                             job_created:'14-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Archived',dataset_approved:true,  dataset_approved_by:'admin' },
+  { id:'7', original_study_name:'va-indose3',    pts_study_name:'va-indose3',     measurements:'Indirect Dosing',                                                                                                                                                                                                                          job_created:'12-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'8', original_study_name:'va-indose1',    pts_study_name:'va-indose1',     measurements:'Indirect Dosing',                                                                                                                                                                                                                          job_created:'11-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
+  { id:'9', original_study_name:'XI42_Study',    pts_study_name:'XI42_Study',     measurements:'Adult Pathology,Body Weights,Cesarean Section,Direct Dosing,Empty Feeder Weights,Fetal Necropsy Observations,Full Feeder Weights,Generalized Measurement,Gross Observations,Mass Tracking,Mating Monitoring,Organ Weights,Parturition,Pup Necropsy observations,Sample Collection,Standard Clinical Observations,Time Bleed Collection,Uterine Exam', job_created:'09-SEP-2021', status:'Done', download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Closed', dataset_approved:false },
+  { id:'10',original_study_name:'XI42_Study2',   pts_study_name:'XI42_Study2',    measurements:'Body Weights,Empty Feeder Weights,Full Feeder Weights,Standard Clinical Observations',                                                                                                                                                       job_created:'09-SEP-2021', status:'Done',        download_links:[], source_type:'Pristima API', is_migrated:false, protocol_status:'Open',   dataset_approved:false },
 ]
 
 // ── Reason Selection popup (FS8.2.5) ──────────────────────────────────────────
@@ -101,7 +101,7 @@ function AlertPopup({ message, onClose }: { message: string; onClose: () => void
       <div className="bg-white rounded border shadow-2xl w-full max-w-sm mx-4" style={{ borderColor:'#c5d0e0' }}>
         <div className="px-5 py-3 border-b flex items-center gap-2" style={{ background:'#fef3cd', borderColor:'#c5d0e0' }}>
           <AlertCircle size={16} className="text-yellow-600"/>
-          <span className="font-semibold text-sm text-gray-800">Savante</span>
+          <span className="font-semibold text-sm text-gray-800">PtsSEND</span>
         </div>
         <div className="px-5 py-4"><p className="text-sm text-gray-700">{message}</p></div>
         <div className="px-5 pb-4 flex justify-end">
@@ -152,7 +152,7 @@ export default function StudiesPage() {
     if (studyName.trim()) {
       const q = studyName.toLowerCase()
       filtered = filtered.filter(r =>
-        r.savante_study_name.toLowerCase().includes(q) ||
+        r.pts_study_name.toLowerCase().includes(q) ||
         r.original_study_name.toLowerCase().includes(q)
       )
     }
@@ -291,7 +291,7 @@ export default function StudiesPage() {
 
         {/* ── Page title ──────────────────────────────────────────────────────── */}
         <div className="text-center text-sm font-medium text-gray-700 mb-3">
-          Savante - List of studies
+          PtsSEND - List of Studies
         </div>
 
         {/* ── Search bar (FS8.1) ──────────────────────────────────────────────── */}
@@ -380,7 +380,7 @@ export default function StudiesPage() {
                     </button>
                   </th>
                   <th className={thCls}>Original Study Name</th>
-                  <th className={thCls}>Savante Study Name</th>
+                  <th className={thCls}>Study Name</th>
                   <th className={thCls} style={{ minWidth:280 }}>Measurements</th>
                   <th className={thCls}>Job Created</th>
                   <th className={thCls}>Status</th>
@@ -427,13 +427,13 @@ export default function StudiesPage() {
                           </button>
                         </td>
 
-                        {/* Savante Study Name (link) */}
+                        {/* Study Name (link) */}
                         <td className={tdCls}>
                           <button
                             className="text-blue-600 hover:underline text-xs"
                             onClick={e => { e.stopPropagation(); navigate(`/studies/${row.id}`) }}
                           >
-                            {row.savante_study_name}
+                            {row.pts_study_name}
                           </button>
                           {row.dataset_approved && (
                             <div className="text-green-600 text-xs mt-0.5">✓ Approved</div>

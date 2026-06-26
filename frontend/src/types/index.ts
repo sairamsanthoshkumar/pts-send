@@ -1,7 +1,7 @@
 export interface Study {
-  id: string; savante_study_name: string; protocol_number: string;
+  id: string; pts_study_name: string; protocol_number: string;
   import_study_name?: string; protocol_status?: string;
-  savante_status: 'Setup'|'DataLoaded'|'Validated'|'Approved'|'Locked';
+  study_status: 'Setup'|'DataLoaded'|'Validated'|'Approved'|'Locked';
   dataset_approved: boolean; dataset_approved_by?: string;
   dataset_approved_comment?: string; dataset_approved_date?: string;
   unique_subject_id_flag: boolean; species?: string; study_type?: string;

@@ -1,6 +1,6 @@
 /**
- * FS7.1 — Savante Top Navigation Bar
- * Matches the Savante header: logo | user/zone | Studies | Study Setup | Controlled Terminology | Output Generate ▼ | System Migration | Transformation | Help | Logout
+ * FS7.1 — PtsSEND Top Navigation Bar
+ * Matches the PtsSEND header: logo | user/zone | Studies | Study Setup | Controlled Terminology | Output Generate ▼ | System Migration | Transformation | Help | Logout
  */
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'

@@ -37,11 +37,11 @@ export default function StudyDetailPage() {
   return (
     <div className="p-8">
       <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
-        <Link to="/studies" className="hover:text-slate-300">Studies</Link><span>/</span><span className="text-slate-300">{study.savante_study_name}</span>
+        <Link to="/studies" className="hover:text-slate-300">Studies</Link><span>/</span><span className="text-slate-300">{study.pts_study_name}</span>
       </div>
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">{study.savante_study_name}</h1>
+          <h1 className="text-2xl font-bold text-white">{study.pts_study_name}</h1>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <span className="font-mono text-sm text-slate-400">{study.protocol_number}</span>
             <span className="text-slate-700">·</span><span className="text-sm text-slate-400">{study.species ?? '—'}</span>
@@ -50,7 +50,7 @@ export default function StudyDetailPage() {
             {study.dataset_approved && <span className="badge-green">Dataset Approved</span>}
           </div>
         </div>
-        <StatusBadge status={study.savante_status}/>
+        <StatusBadge status={study.study_status}/>
       </div>
       <div className="flex gap-1 mb-6 bg-slate-900 border border-slate-800 rounded-xl p-1 w-fit flex-wrap">
         {TABS.map(({ id:tid, icon:Icon, label }) => (
@@ -75,14 +75,14 @@ export default function StudyDetailPage() {
 
 function StudyTab({ study }: { study: Study }) {
   const qc = useQueryClient()
-  const [status, setStatus] = useState(study.savante_status)
+  const [status, setStatus] = useState(study.study_status)
   const needsReason = ['DataLoaded','Validated','Approved','Locked'].includes(status)
 
   const mutation = useMutation({
     mutationFn: () => {
       const reason = needsReason ? prompt('FS14.2.1: Enter audit reason for this change') ?? '' : undefined
       if (needsReason && !reason) throw new Error('Reason required')
-      return updateStudy(study.id, { savante_status: status }, reason)
+      return updateStudy(study.id, { study_status: status }, reason)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey:['study', study.id] }),
   })
@@ -92,7 +92,7 @@ function StudyTab({ study }: { study: Study }) {
       <div className="card">
         <h3 className="font-semibold text-white mb-4">FS14 — Study Definition</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <Field label="Savante Study Name (FS14.1.2)" value={study.savante_study_name}/>
+          <Field label="Study Name (FS14.1.2)" value={study.pts_study_name}/>
           <Field label="Import Study Name (FS14.1.3)" value={study.import_study_name || '—'}/>
           <Field label="Protocol Status (FS14.1.4)" value={study.protocol_status || 'Not set'}/>
           <Field label="Protocol Number" value={study.protocol_number}/>
@@ -103,13 +103,13 @@ function StudyTab({ study }: { study: Study }) {
         </div>
 
         <div className="mt-5 pt-5 border-t border-slate-800">
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Savante Study Status (FS14.1.1)</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Study Status (FS14.1.1)</label>
           <p className="text-xs text-slate-500 mb-2">When status is "Data Loaded" or beyond, an audit reason is required for edits.</p>
           <div className="flex items-center gap-3">
-            <select value={status} onChange={e => setStatus(e.target.value as Study['savante_status'])} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <select value={status} onChange={e => setStatus(e.target.value as Study['study_status'])} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
               {['Setup','DataLoaded','Validated','Approved','Locked'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <button onClick={() => mutation.mutate()} disabled={status === study.savante_status || mutation.isPending} className="btn-primary flex items-center gap-2 text-sm">
+            <button onClick={() => mutation.mutate()} disabled={status === study.study_status || mutation.isPending} className="btn-primary flex items-center gap-2 text-sm">
               {mutation.isPending && <Loader2 size={14} className="animate-spin"/>}Save Status
             </button>
           </div>
@@ -261,7 +261,7 @@ function IngestionTab({ studyId }: { studyId: string }) {
     <div className="space-y-4 max-w-2xl">
       <div className="card">
         <h3 className="font-semibold text-white mb-1">FS10/FS13 — Study Load: Select Measurements/Files</h3>
-        <p className="text-sm text-slate-500 mb-4">Upload raw measurement data (Excel/CSV) for ingestion into Savante.</p>
+        <p className="text-sm text-slate-500 mb-4">Upload raw measurement data (Excel/CSV) for ingestion into PtsSEND.</p>
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Domain Hint (FS11 Input Mapping)</label>
           <select value={domainHint} onChange={e => setDomainHint(e.target.value)} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500">

@@ -50,7 +50,7 @@ async def approve_dataset(study_id: uuid.UUID, comment: str = "",
     study.dataset_approved_by = current_user.get("sub")
     study.dataset_approved_comment = comment
     study.dataset_approved_date = datetime.now(timezone.utc)
-    study.savante_status = "Approved"
+    study.study_status = "Approved"
     from app.models.domain import AuditLog
     db.add(AuditLog(study_id=study_id, user_id=current_user.get("sub"), action="APPROVE_DATASET",
                     resource_type="Study", resource_id=str(study_id), reason=comment))

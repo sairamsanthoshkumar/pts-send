@@ -16,15 +16,15 @@ export default function DashboardPage() {
   const studies = data ?? []
   const stats = {
     total: studies.length,
-    approved: studies.filter(s => ['Approved','Locked'].includes(s.savante_status)).length,
-    dataLoaded: studies.filter(s => s.savante_status === 'DataLoaded').length,
-    setup: studies.filter(s => s.savante_status === 'Setup').length,
+    approved: studies.filter(s => ['Approved','Locked'].includes(s.study_status)).length,
+    dataLoaded: studies.filter(s => s.study_status === 'DataLoaded').length,
+    setup: studies.filter(s => s.study_status === 'Setup').length,
   }
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Welcome back, {user?.name?.split(' ')[0] ?? 'there'}</h1>
-        <p className="text-slate-400 mt-1">Pristima Savante SEND submission overview</p>
+        <p className="text-slate-400 mt-1">Pristima SEND submission overview</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[{icon:<FlaskConical size={20}/>,label:'Total Studies',value:stats.total,color:'blue'},
@@ -52,12 +52,12 @@ export default function DashboardPage() {
             {studies.slice(0,5).map(s => (
               <Link key={s.id} to={`/studies/${s.id}`} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors">
                 <div>
-                  <p className="text-sm font-medium text-white">{s.savante_study_name}</p>
+                  <p className="text-sm font-medium text-white">{s.pts_study_name}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{s.protocol_number} · SENDIG {s.sendig_version} · {s.connection_type}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {s.dataset_approved && <ShieldCheck size={14} className="text-emerald-400"/>}
-                  <StatusBadge status={s.savante_status}/>
+                  <StatusBadge status={s.study_status}/>
                 </div>
               </Link>
             ))}

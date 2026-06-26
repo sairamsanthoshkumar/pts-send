@@ -12,7 +12,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
-app = FastAPI(title="PtsSEND API", description="CDISC SEND Submission Platform — based on Pristima Savante FS", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="PtsSEND API", description="CDISC SEND Submission Platform — based on SEND Submission FS", version="2.0.0", lifespan=lifespan)
 origins = list(settings.CORS_ORIGINS)
 if settings.FRONTEND_URL: origins.append(settings.FRONTEND_URL)
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
