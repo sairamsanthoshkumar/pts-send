@@ -9,8 +9,9 @@ const OUTPUT_MENU = [
   { label:'View Output Log',       to:'/output/log'     },
 ]
 const SETUP_MENU = [
-  { label:'Connection Setup (FS7)', to:'/setup/connection' },
-  { label:'Load Study (FS10)',      to:'/setup/load'       },
+  { label:'Connection Setup (FS7)',  to:'/setup/connection' },
+  { label:'Load Study (FS10)',       to:'/setup/load'       },
+  { label:'Input Mapping (FS11)',    to:'/setup/mapping'    },
 ]
 
 export default function TopNav() {
@@ -40,7 +41,8 @@ export default function TopNav() {
       <div className="absolute top-full left-0 mt-1 rounded shadow-xl z-50 min-w-[210px] border overflow-hidden"
         style={{ background:'white', borderColor:'#d1d5db' }}>
         {items.map(item => (
-          <button key={item.to} onClick={() => { navigate(item.to); setOutputOpen(false); setSetupOpen(false) }}
+          <button key={item.to}
+            onClick={() => { navigate(item.to); setOutputOpen(false); setSetupOpen(false) }}
             className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors"
             style={{ color:'#1e3a6e', borderBottom:'1px solid #f3f4f6' }}>
             {item.label}
@@ -61,15 +63,13 @@ export default function TopNav() {
           <span style={{ color:'white', fontWeight:700, fontSize:'16px', fontFamily:'Georgia,serif', letterSpacing:'0.5px' }}>tsSEND</span>
         </div>
 
-        {/* User */}
         {user && (
           <span className="text-blue-200 text-sm font-medium flex-shrink-0 border-r border-blue-400 pr-4">
             {user.name}
           </span>
         )}
 
-        {/* Studies */}
-        <NavLink to="/studies" className={({ isActive }) => linkCls(isActive)}>Studies</NavLink>
+        <NavLink to="/studies"         className={({ isActive }) => linkCls(isActive)}>Studies</NavLink>
 
         {/* Study Setup ▼ */}
         <div className="relative" ref={setupRef}>
@@ -79,8 +79,7 @@ export default function TopNav() {
           <DropMenu items={SETUP_MENU} open={setupOpen}/>
         </div>
 
-        {/* Controlled Terminology */}
-        <NavLink to="/ct" className={({ isActive }) => linkCls(isActive)}>Controlled Terminology</NavLink>
+        <NavLink to="/ct"              className={({ isActive }) => linkCls(isActive)}>Controlled Terminology</NavLink>
 
         {/* Output Generate ▼ */}
         <div className="relative" ref={outputRef}>
@@ -90,18 +89,12 @@ export default function TopNav() {
           <DropMenu items={OUTPUT_MENU} open={outputOpen}/>
         </div>
 
-        {/* System Migration */}
         <NavLink to="/system-migration" className={({ isActive }) => linkCls(isActive)}>System Migration</NavLink>
-
-        {/* Transformation */}
         <NavLink to="/transformation"   className={({ isActive }) => linkCls(isActive)}>Transformation</NavLink>
-
-        {/* Help */}
         <NavLink to="/help"             className={({ isActive }) => linkCls(isActive)}>Help</NavLink>
 
         <div className="flex-1"/>
 
-        {/* Logout */}
         <button onClick={() => { logout(); navigate('/login') }}
           className="flex items-center gap-1.5 text-sm text-blue-100 hover:text-white transition-colors">
           <LogOut size={14}/> Logout
