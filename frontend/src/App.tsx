@@ -6,6 +6,7 @@ import StudiesPage from './pages/StudiesPage'
 import StudyDetailPage from './pages/StudyDetailPage'
 import CTPage from './pages/CTPage'
 import ConnectionPage from './pages/ConnectionPage'
+import StudyLoadPage from './pages/StudyLoadPage'
 import Layout from './components/common/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -19,11 +20,12 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route index element={<DashboardPage />} />
-          <Route path="studies" element={<StudiesPage />} />
-          <Route path="studies/:id" element={<StudyDetailPage />} />
-          <Route path="ct" element={<CTPage />} />
+          <Route index                   element={<DashboardPage />} />
+          <Route path="studies"          element={<StudiesPage />} />
+          <Route path="studies/:id"      element={<StudyDetailPage />} />
+          <Route path="ct"               element={<CTPage />} />
           <Route path="setup/connection" element={<ConnectionPage />} />
+          <Route path="setup/load"       element={<StudyLoadPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
