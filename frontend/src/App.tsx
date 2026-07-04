@@ -6,6 +6,7 @@ import StudiesPage from './pages/StudiesPage'
 import StudyDetailPage from './pages/StudyDetailPage'
 import StudyDefinitionPage from './pages/StudyDefinitionPage'
 import StudyGroupsPage from './pages/StudyGroupsPage'
+import StudyAnimalsPage from './pages/StudyAnimalsPage'
 import CTPage from './pages/CTPage'
 import ConnectionPage from './pages/ConnectionPage'
 import StudyLoadPage from './pages/StudyLoadPage'
@@ -24,22 +25,22 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route index                                element={<DashboardPage />} />
-          <Route path="studies"                       element={<StudiesPage />} />
-          <Route path="studies/:id"                   element={<StudyDetailPage />} />
-          <Route path="studies/:id/define/study"      element={<StudyDefinitionPage />} />
-          <Route path="studies/:id/define/groups"     element={<StudyGroupsPage />} />
-          <Route path="studies/:id/define/animals"    element={<StudyDefinitionPage />} />
-          <Route path="studies/:id/define/trial-summary" element={<StudyDefinitionPage />} />
-          <Route path="studies/:id/define/trial-element" element={<StudyDefinitionPage />} />
-          <Route path="studies/:id/define/trial-arm"  element={<StudyDefinitionPage />} />
-          <Route path="studies/:id/define/trial-set"  element={<StudyDefinitionPage />} />
-          <Route path="studies/:id/define/dosing"     element={<StudyDefinitionPage />} />
-          <Route path="ct"                            element={<CTPage />} />
-          <Route path="setup/connection"              element={<ConnectionPage />} />
-          <Route path="setup/load"                    element={<StudyLoadPage />} />
-          <Route path="setup/mapping"                 element={<InputMappingPage />} />
-          <Route path="setup/measurements"            element={<MeasurementSelectionPage />} />
+          <Route index                                    element={<DashboardPage />} />
+          <Route path="studies"                           element={<StudiesPage />} />
+          <Route path="studies/:id"                       element={<StudyDetailPage />} />
+          <Route path="studies/:id/define/study"          element={<StudyDefinitionPage />} />
+          <Route path="studies/:id/define/groups"         element={<StudyGroupsPage />} />
+          <Route path="studies/:id/define/animals"        element={<StudyAnimalsPage />} />
+          <Route path="studies/:id/define/trial-summary"  element={<StudyDefinitionPage />} />
+          <Route path="studies/:id/define/trial-element"  element={<StudyDefinitionPage />} />
+          <Route path="studies/:id/define/trial-arm"      element={<StudyDefinitionPage />} />
+          <Route path="studies/:id/define/trial-set"      element={<StudyDefinitionPage />} />
+          <Route path="studies/:id/define/dosing"         element={<StudyDefinitionPage />} />
+          <Route path="ct"                                element={<CTPage />} />
+          <Route path="setup/connection"                  element={<ConnectionPage />} />
+          <Route path="setup/load"                        element={<StudyLoadPage />} />
+          <Route path="setup/mapping"                     element={<InputMappingPage />} />
+          <Route path="setup/measurements"                element={<MeasurementSelectionPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
