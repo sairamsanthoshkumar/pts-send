@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, NavLink } from 'react-router-dom'
+import { useNavigate, NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, LogOut } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
@@ -8,28 +8,23 @@ const OUTPUT_MENU = [
   { label:'Output Configuration',  to:'/output/config'  },
   { label:'View Output Log',       to:'/output/log'     },
 ]
-const SETUP_MENU = [
-  { label:'Connection Setup (FS7)',  to:'/setup/connection' },
-  { label:'Load Study (FS10)',       to:'/setup/load'       },
-  { label:'Input Mapping (FS11)',    to:'/setup/mapping'    },
-]
 
 export default function TopNav() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const [outputOpen, setOutputOpen] = useState(false)
-  const [setupOpen,  setSetupOpen]  = useState(false)
   const outputRef = useRef<HTMLDivElement>(null)
-  const setupRef  = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (outputRef.current && !outputRef.current.contains(e.target as Node)) setOutputOpen(false)
-      if (setupRef.current  && !setupRef.current.contains(e.target as Node))  setSetupOpen(false)
     }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
+
+  const setupActive = ['/setup/connection', '/setup/load', '/setup/mapping'].includes(location.pathname)
 
   const linkCls = (active: boolean) =>
     `px-2 py-1 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
@@ -42,7 +37,7 @@ export default function TopNav() {
         style={{ background:'white', borderColor:'#d1d5db' }}>
         {items.map(item => (
           <button key={item.to}
-            onClick={() => { navigate(item.to); setOutputOpen(false); setSetupOpen(false) }}
+            onClick={() => { navigate(item.to); setOutputOpen(false) }}
             className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors"
             style={{ color:'#1e3a6e', borderBottom:'1px solid #f3f4f6' }}>
             {item.label}
@@ -71,13 +66,12 @@ export default function TopNav() {
 
         <NavLink to="/studies"         className={({ isActive }) => linkCls(isActive)}>Studies</NavLink>
 
-        {/* Study Setup ▼ */}
-        <div className="relative" ref={setupRef}>
-          <button onClick={() => setSetupOpen(v=>!v)} className={`${linkCls(false)} flex items-center gap-1`}>
-            Study Setup <ChevronDown size={13} className={`transition-transform ${setupOpen?'rotate-180':''}`}/>
-          </button>
-          <DropMenu items={SETUP_MENU} open={setupOpen}/>
-        </div>
+        <NavLink
+          to="/setup/connection"
+          className={({ isActive }) => linkCls(isActive || setupActive)}
+        >
+          Study Setup
+        </NavLink>
 
         <NavLink to="/ct"              className={({ isActive }) => linkCls(isActive)}>Controlled Terminology</NavLink>
 
