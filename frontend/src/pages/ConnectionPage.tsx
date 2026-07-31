@@ -315,9 +315,9 @@ export default function ConnectionPage() {
             {/* FS7.3.2 Mapping */}
             <button
               onClick={() => navigate('/setup/mapping')}
-              disabled={isLoading || !selectedName || selectedName === NEW_CONN}
-              style={{ ...btnBase, background: 'white', color: '#2563eb', opacity: (!selectedName || selectedName === NEW_CONN) ? 0.5 : 1 }}
-              onMouseEnter={e => { if (!isLoading && selectedName && selectedName !== NEW_CONN) (e.currentTarget).style.background = '#eff6ff' }}
+              disabled={isLoading}
+              style={{ ...btnBase, background: 'white', color: '#2563eb' }}
+              onMouseEnter={e => { if (!isLoading) (e.currentTarget).style.background = '#eff6ff' }}
               onMouseLeave={e => { (e.currentTarget).style.background = 'white' }}
             >
               Mapping
