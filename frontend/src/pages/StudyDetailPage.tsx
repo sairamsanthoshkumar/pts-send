@@ -3,16 +3,16 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Upload, GitMerge, ShieldCheck, FileText, Loader2, CheckCircle2, AlertTriangle, XCircle,
-  Users, Beaker, ClipboardCheck, BookOpen
+  Users, Beaker, ClipboardCheck, BookOpen, MapPin
 } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import {
   getStudy, uploadFile, getSendDomains, runTransformation, getStudyDomains,
   runValidation, getValidationResults, generatePackage, getAuditTrail,
   getGroups, createGroup, getAnimals, getCTMappings, updateCTMapping, bulkMapCT,
-  updateStudy, approveDataset
+  updateStudy, approveDataset, getPkShell, getFocusMappings, getFocusMappingOptions, createFocusMapping, deleteFocusMapping
 } from '../api/client'
-import type { Study, StudyGroup, AuditEntry, CTMapping, Domain } from '../types'
+import type { Study, StudyGroup, AuditEntry, CTMapping, Domain, StudyFocusMapping } from '../types'
 import { StatusBadge } from './DashboardPage'
 
 const TABS = [
@@ -22,6 +22,7 @@ const TABS = [
   { id:'ingest',    icon:Upload,        label:'Ingestion (FS10/13)' },
   { id:'transform', icon:GitMerge,      label:'SEND Output (FS22/23)' },
   { id:'ct',        icon:BookOpen,      label:'CT Mapping (FS25)' },
+  { id:'focid',     icon:MapPin,        label:'FOCID Mapping (FS27.31.5)' },
   { id:'validate',  icon:ShieldCheck,   label:'Validation' },
   { id:'report',    icon:ClipboardCheck,label:'Reports (FS29/32)' },
 ]
@@ -65,6 +66,7 @@ export default function StudyDetailPage() {
       {tab==='ingest'    && <IngestionTab studyId={id!} />}
       {tab==='transform' && <TransformTab studyId={id!} />}
       {tab==='ct'        && <CTTab studyId={id!} />}
+      {tab==='focid'     && <FocidTab studyId={id!} />}
       {tab==='validate'  && <ValidationTab studyId={id!} />}
       {tab==='report'    && <ReportTab study={study} />}
     </div>
@@ -293,6 +295,10 @@ function TransformTab({ studyId }: { studyId: string }) {
   const { data: domains } = useQuery({ queryKey:['domains',studyId], queryFn: () => getStudyDomains(studyId).then(r => r.data as Domain[]) })
   const mutation = useMutation({ mutationFn: () => runTransformation(studyId, selected, outputFormat), onSuccess: res => setTaskMsg(`Task queued: ${res.data.task_id}`) })
   const toggle = (d: string) => setSelected(s => s.includes(d) ? s.filter(x => x!==d) : [...s,d])
+  const downloadShell = async (domain: 'PC'|'PP') => {
+    const response = await getPkShell(studyId, domain)
+    const url = URL.createObjectURL(response.data); const link = document.createElement('a'); link.href = url; link.download = `${domain}.csv`; link.click(); URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-4 max-w-3xl">
@@ -303,7 +309,7 @@ function TransformTab({ studyId }: { studyId: string }) {
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Output Format (FS23)</label>
           <div className="flex gap-2">
-            {['XPT','CSV','XML'].map(f => (
+            {['XPT','CSV - Untransformed','CSV','XML'].map(f => (
               <button key={f} onClick={() => setOutputFormat(f)} className={`px-4 py-1.5 rounded-lg text-sm font-mono font-medium border transition-colors ${outputFormat===f ? 'bg-brand-600/20 border-brand-500 text-brand-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'}`}>{f}</button>
             ))}
           </div>
@@ -320,6 +326,10 @@ function TransformTab({ studyId }: { studyId: string }) {
         <button onClick={() => mutation.mutate()} disabled={!selected.length || mutation.isPending} className="btn-primary flex items-center gap-2">
           {mutation.isPending ? <Loader2 size={14} className="animate-spin"/> : <GitMerge size={14}/>}Generate {outputFormat}
         </button>
+        <div className="flex gap-2 mt-3">
+          <button onClick={() => downloadShell('PC')} className="btn-secondary text-sm">Download PC CSV Shell</button>
+          <button onClick={() => downloadShell('PP')} className="btn-secondary text-sm">Download PP CSV Shell</button>
+        </div>
         {taskMsg && <div className="mt-3 p-3 rounded-lg bg-emerald-900/20 border border-emerald-800 text-emerald-400 text-sm">✓ {taskMsg}</div>}
       </div>
 
@@ -403,6 +413,64 @@ function CTTab({ studyId }: { studyId: string }) {
   )
 }
 
+function FocidTab({ studyId }: { studyId: string }) {
+  const qc = useQueryClient()
+  const [fixedType, setFixedType] = useState<'Clinical Sign'|'Dosing'|'Gross'|'Micro'>('Dosing')
+  const [sourceValue, setSourceValue] = useState('')
+  const [category, setCategory] = useState('')
+  const [subcategory, setSubcategory] = useState('')
+  const [locator, setLocator] = useState('')
+  const [tissueFlag, setTissueFlag] = useState('')
+  const [applyBoth, setApplyBoth] = useState(false)
+  const [focid, setFocid] = useState('')
+  const { data: mappings = [] } = useQuery({ queryKey: ['focus-mappings', studyId], queryFn: () => getFocusMappings(studyId).then(r => r.data as StudyFocusMapping[]) })
+  const { data: options } = useQuery({ queryKey: ['focus-mapping-options', studyId], queryFn: () => getFocusMappingOptions(studyId).then(r => r.data as any) })
+  const domains = fixedType === 'Clinical Sign' ? ['CL'] : fixedType === 'Dosing' ? ['EX'] : fixedType === 'Gross' ? ['MA'] : ['MI']
+  const choices = fixedType === 'Dosing' ? (options?.dosing ?? []).map((value: string) => ({ value, label: value })) : fixedType === 'Clinical Sign'
+    ? (options?.clinical_sign ?? []).map((item: any) => ({ value: item.locator || item.category, label: [item.category, item.subcategory, item.locator].filter(Boolean).join(' / ') }))
+    : (options?.[fixedType === 'Gross' ? 'gross' : 'micro'] ?? []).map((item: any) => ({ value: item.tissue, locator: item.locator, label: item.tissue }))
+  const tissueChoices = choices.filter((choice: any, index: number, list: any[]) => list.findIndex(item => item.value === choice.value) === index)
+  const locatorChoices = tissueChoices.find((choice: any) => choice.value === sourceValue)?.locator ? [tissueChoices.find((choice: any) => choice.value === sourceValue).locator] : []
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const payload = { fixed_type: fixedType, source_value: sourceValue.trim(), focid: focid.trim(), category: category || undefined, subcategory: subcategory || undefined, locator: locator || undefined, tissue_flag: tissueFlag || undefined }
+      const results = []
+      const targetTypes = applyBoth && (fixedType === 'Gross' || fixedType === 'Micro') ? ['Gross', 'Micro'] as const : [fixedType]
+      for (const targetType of targetTypes) {
+        const targetDomains = targetType === 'Gross' ? ['MA'] : targetType === 'Micro' ? ['MI'] : domains
+        for (const targetDomain of targetDomains) results.push(await createFocusMapping(studyId, { ...payload, fixed_type: targetType, domain_code: targetDomain }))
+      }
+      return results
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['focus-mappings', studyId] }); setSourceValue(''); setCategory(''); setSubcategory(''); setLocator(''); setTissueFlag(''); setFocid(''); setApplyBoth(false) },
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (mappingId: string) => deleteFocusMapping(studyId, mappingId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['focus-mappings', studyId] }),
+  })
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <div className="card">
+        <h3 className="font-semibold text-white mb-1">Study Focus (FOCID) Mapping</h3>
+        <p className="text-sm text-slate-500 mb-4">Define a study focus and associate it with a study lexicon, dose site, gross tissue, or micro tissue.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input value={focid} onChange={e => setFocid(e.target.value)} placeholder="FOCID" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+          <select value={fixedType} onChange={e => { setFixedType(e.target.value as typeof fixedType); setSourceValue(''); setCategory(''); setSubcategory(''); setLocator('') }} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"><option>Clinical Sign</option><option>Dosing</option><option>Gross</option><option>Micro</option></select>
+          <select value={sourceValue} onChange={e => { setSourceValue(e.target.value); setLocator('') }} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"><option value="">Select {fixedType} value</option>{(fixedType === 'Gross' || fixedType === 'Micro' ? tissueChoices : choices).map((choice: any) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select>
+          {(fixedType === 'Gross' || fixedType === 'Micro') && <select value={locator} onChange={e => setLocator(e.target.value)} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"><option value="">Locator (optional)</option>{locatorChoices.map((value: string) => <option key={value} value={value}>{value}</option>)}</select>}
+          {fixedType === 'Clinical Sign' && <><input value={category} onChange={e => setCategory(e.target.value)} placeholder="Category (optional)" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" /><input value={subcategory} onChange={e => setSubcategory(e.target.value)} placeholder="Subcategory (optional)" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" /></>}
+          {(fixedType === 'Gross' || fixedType === 'Micro') && <input value={tissueFlag} onChange={e => setTissueFlag(e.target.value)} placeholder="Tissue Flag (optional)" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />}
+          {(fixedType === 'Gross' || fixedType === 'Micro') && <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={applyBoth} onChange={e => setApplyBoth(e.target.checked)} className="accent-brand-500" /> Apply to {fixedType === 'Gross' ? 'Micro' : 'Gross'}</label>}
+          <button disabled={!sourceValue.trim() || !focid.trim() || createMutation.isPending} onClick={() => createMutation.mutate()} className="btn-primary text-sm">Add Mapping</button>
+        </div>
+      </div>
+      <div className="card p-0 overflow-hidden">
+        {!mappings.length ? <div className="p-8 text-center text-slate-500 text-sm">No study focus mappings defined.</div> : <table className="w-full text-sm"><thead><tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase"><th className="px-5 py-3">Type</th><th className="px-5 py-3">Source</th><th className="px-5 py-3">Category</th><th className="px-5 py-3">Subcategory</th><th className="px-5 py-3">FOCID</th><th className="px-5 py-3" /></tr></thead><tbody className="divide-y divide-slate-800">{mappings.map(mapping => <tr key={mapping.id}><td className="px-5 py-3 font-mono text-brand-400">{mapping.fixed_type}</td><td className="px-5 py-3 text-slate-300">{mapping.source_value}</td><td className="px-5 py-3 text-slate-400">{mapping.category || 'NULL'}</td><td className="px-5 py-3 text-slate-400">{mapping.subcategory || 'NULL'}</td><td className="px-5 py-3 text-white">{mapping.focid}</td><td className="px-5 py-3 text-right"><button onClick={() => deleteMutation.mutate(mapping.id)} className="text-red-400 text-xs">Delete</button></td></tr>)}</tbody></table>}
+      </div>
+    </div>
+  )
+}
+
 // ── Validation Tab ────────────────────────────────────────────────────────────
 
 function ValidationTab({ studyId }: { studyId: string }) {
@@ -418,7 +486,7 @@ function ValidationTab({ studyId }: { studyId: string }) {
       <div className="card">
         <h3 className="font-semibold text-white mb-1">Run SENDIG Validation</h3>
         <p className="text-sm text-slate-500 mb-4">Validates against SENDIG, FDA validator rules, and business rules per FS27 domain algorithms</p>
-        <div className="flex flex-wrap gap-2 mb-5">{['DM','BW','LB','CL','MA','MI'].map(d => <button key={d} onClick={() => toggle(d)} className={`px-3 py-1.5 rounded-lg text-sm font-mono font-medium border transition-colors ${selected.includes(d) ? 'bg-brand-600/20 border-brand-500 text-brand-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'}`}>{d}</button>)}</div>
+        <div className="flex flex-wrap gap-2 mb-5">{['DM','BW','EG','LB','CL','MA','MI'].map(d => <button key={d} onClick={() => toggle(d)} className={`px-3 py-1.5 rounded-lg text-sm font-mono font-medium border transition-colors ${selected.includes(d) ? 'bg-brand-600/20 border-brand-500 text-brand-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'}`}>{d}</button>)}</div>
         <button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="btn-primary flex items-center gap-2">{mutation.isPending ? <Loader2 size={14} className="animate-spin"/> : <ShieldCheck size={14}/>}Run Validation</button>
         {taskMsg && <div className="mt-3 p-3 rounded-lg bg-emerald-900/20 border border-emerald-800 text-emerald-400 text-sm">✓ {taskMsg}</div>}
       </div>
@@ -454,8 +522,9 @@ function ReportTab({ study }: { study: Study }) {
   const qc = useQueryClient()
   const [taskMsg, setTaskMsg] = useState<string|null>(null)
   const [format, setFormat] = useState('XPT')
+  const [defineVersion, setDefineVersion] = useState('2.1')
   const { data: auditData } = useQuery({ queryKey:['audit',study.id], queryFn: () => getAuditTrail(study.id).then(r => r.data as AuditEntry[]) })
-  const mutation = useMutation({ mutationFn: () => generatePackage(study.id, format), onSuccess: res => setTaskMsg(`Package started: ${res.data.task_id}`) })
+  const mutation = useMutation({ mutationFn: () => generatePackage(study.id, format, defineVersion), onSuccess: res => setTaskMsg(`Package started: ${res.data.task_id}`) })
   const approveMutation = useMutation({
     mutationFn: () => { const comment = prompt('FS8.2.7: Enter approval comment') ?? ''; return approveDataset(study.id, comment) },
     onSuccess: () => qc.invalidateQueries({ queryKey:['study',study.id] }),
@@ -468,7 +537,8 @@ function ReportTab({ study }: { study: Study }) {
         <p className="text-sm text-slate-500 mb-4">Creates Define.xml, SDRG, and bundles all domain files</p>
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Output Format</label>
-          <div className="flex gap-2">{['XPT','CSV','XML'].map(f => <button key={f} onClick={() => setFormat(f)} className={`px-4 py-1.5 rounded-lg text-sm font-mono font-medium border transition-colors ${format===f ? 'bg-brand-600/20 border-brand-500 text-brand-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'}`}>{f}</button>)}</div>
+          <div className="flex gap-2">{['XPT','CSV','SEND_DATASET','XML'].map(f => <button key={f} onClick={() => setFormat(f)} className={`px-4 py-1.5 rounded-lg text-sm font-mono font-medium border transition-colors ${format===f ? 'bg-brand-600/20 border-brand-500 text-brand-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'}`}>{f}</button>)}</div>
+          {format === 'SEND_DATASET' && <div className="mt-3 flex items-center gap-3"><label className="text-xs text-slate-400">Define.xml Version</label><select value={defineVersion} onChange={e => setDefineVersion(e.target.value)} className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white"><option value="1.0">1.0</option><option value="2.0">2.0</option><option value="2.1">2.1</option></select></div>}
         </div>
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[{label:'Define.xml (FS29)',desc:'CDISC metadata'},{label:'SDRG (App. J)',desc:"Reviewer's guide"},{label:`${format} Files`,desc:'Domain datasets'}].map(({label,desc}) => (

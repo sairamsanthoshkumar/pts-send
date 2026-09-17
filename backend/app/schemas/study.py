@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel
 
 # ─── Study ───────────────────────────────────────────────────────────────────
@@ -14,6 +14,12 @@ class StudyCreate(BaseModel):
     connection_type: str = "CSV"
     description: Optional[str] = None
     unique_subject_id_flag: bool = False
+
+class LoadStudyRequest(BaseModel):
+    connector_url: str
+    connector_type: str
+    connector_name: Optional[str] = None
+    loaded_study_names: List[str] = []
 
 class StudyUpdate(BaseModel):
     pts_study_name: Optional[str] = None
@@ -87,6 +93,15 @@ class AnimalCreate(BaseModel):
     arm: Optional[str] = None
     setcd: Optional[str] = None
     group_id: Optional[uuid.UUID] = None
+    reference_age: Optional[float] = None
+    reference_age_unit: Optional[str] = None
+    age_reference_date: Optional[str] = None
+    age_reference_significance: Optional[str] = None
+    brthdtc: Optional[str] = None
+    age: Optional[float] = None
+    age_units: Optional[str] = None
+    rfxstdtc: Optional[str] = None
+    rfxendtc: Optional[str] = None
 
 class AnimalResponse(BaseModel):
     id: uuid.UUID
@@ -97,6 +112,15 @@ class AnimalResponse(BaseModel):
     species: Optional[str]
     strain: Optional[str]
     rfstdtc: Optional[str]
+    reference_age: Optional[float]
+    reference_age_unit: Optional[str]
+    age_reference_date: Optional[str]
+    age_reference_significance: Optional[str]
+    brthdtc: Optional[str]
+    age: Optional[float]
+    age_units: Optional[str]
+    rfxstdtc: Optional[str]
+    rfxendtc: Optional[str]
     rfendtc: Optional[str]
     armcd: Optional[str]
     arm: Optional[str]
@@ -121,6 +145,21 @@ class CTMappingResponse(BaseModel):
     status: str
     model_config = {"from_attributes": True}
 
+class StudyFocusMappingCreate(BaseModel):
+    domain_code: Literal["EX", "CL", "MA", "MI"]
+    fixed_type: Literal["Clinical Sign", "Dosing", "Gross", "Micro"]
+    source_value: str
+    focid: str
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
+    tissue_flag: Optional[str] = None
+    locator: Optional[str] = None
+
+class StudyFocusMappingResponse(StudyFocusMappingCreate):
+    id: uuid.UUID
+    study_id: uuid.UUID
+    model_config = {"from_attributes": True}
+
 # ─── Output Mapping ───────────────────────────────────────────────────────────
 class OutputMappingCreate(BaseModel):
     domain_code: str
@@ -128,6 +167,7 @@ class OutputMappingCreate(BaseModel):
     source_field: Optional[str] = None
     transform_rule: Optional[str] = None
     is_required: bool = False
+    editable: Literal["Y", "N", "I"] = "Y"
 
 class OutputMappingResponse(BaseModel):
     id: uuid.UUID
@@ -136,6 +176,7 @@ class OutputMappingResponse(BaseModel):
     source_field: Optional[str]
     transform_rule: Optional[str]
     is_required: bool
+    editable: str
     model_config = {"from_attributes": True}
 
 # ─── Shared ───────────────────────────────────────────────────────────────────

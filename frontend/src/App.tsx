@@ -12,12 +12,19 @@ import ConnectionPage from './pages/ConnectionPage'
 import StudyLoadPage from './pages/StudyLoadPage'
 import InputMappingPage from './pages/InputMappingPage'
 import MeasurementSelectionPage from './pages/MeasurementSelectionPage'
+import AdditionalMeasurementPage from './pages/AdditionalMeasurementPage'
 import Layout from './components/common/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
   return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />
 }
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore(s => s.user)
+  return user?.role === 'admin' ? <>{children}</> : <Navigate to="/" replace />
+}
+          <Route path="ct"                                element={<AdminRoute><CTPage /></AdminRoute>} />
 
 export default function App() {
   return (
@@ -28,6 +35,7 @@ export default function App() {
           <Route index                                    element={<DashboardPage />} />
           <Route path="studies"                           element={<StudiesPage />} />
           <Route path="studies/:id"                       element={<StudyDetailPage />} />
+          <Route path="studies/:id/measurements"          element={<AdditionalMeasurementPage />} />
           <Route path="studies/:id/define/study"          element={<StudyDefinitionPage />} />
           <Route path="studies/:id/define/groups"         element={<StudyGroupsPage />} />
           <Route path="studies/:id/define/animals"        element={<StudyAnimalsPage />} />

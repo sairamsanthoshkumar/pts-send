@@ -21,7 +21,6 @@ interface Connector {
 }
 
 const CONNECTOR_TYPES: { value: ConnectorType; label: string }[] = [
-  { value: 'PRISTIMA_API',  label: 'Pristima API' },                              // FS7.1.6
   { value: 'OPENVMS',       label: 'OpenVMS PATH/TOX SYSTEM Offload files' },    // FS7.1.7
   { value: 'CSV',           label: 'CSV Data Source' },                           // FS7.1.8
   { value: 'SEND_DATASET',  label: 'SEND Dataset' },                              // FS7.1.9
@@ -64,7 +63,7 @@ export default function ConnectionPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
-  const [connectorType, setConnectorType] = useState<ConnectorType>('PRISTIMA_API')
+  const [connectorType, setConnectorType] = useState<ConnectorType>('CSV')
   const [selectedName, setSelectedName]   = useState<string>('')
   const [newName, setNewName]             = useState('')
   const [url, setUrl]                     = useState('')
@@ -167,7 +166,16 @@ export default function ConnectionPage() {
     },
     onSuccess: (data) => {
       setPopup({ success: true, message: data.message })
-      setTimeout(() => navigate(data.redirect ?? '/studies'), 1200)
+      // After a short delay navigate to Study Load and include connector info
+      setTimeout(() => {
+        const name = isNew ? newName.trim() : selectedName
+        const params = new URLSearchParams({
+          connector_url: url || '',
+          connector_type: connectorType,
+          connector_name: name || '',
+        })
+        navigate(`/setup/load?${params.toString()}`)
+      }, 900)
     },
     onError: (err: any) => {
       setPopup({ success: false, message: err?.message ?? err?.response?.data?.detail ?? 'Connection failed.' })

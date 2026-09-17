@@ -106,7 +106,7 @@ export default function InputMappingPage() {
     setTimeout(() => navigate('/setup/load'), 800)
   }
 
-  // FS11.2.2 Cancel — reset to defaults
+  // FS11.2.2 Cancel — reset to defaults and return to Study Load
   const handleCancel = () => {
     setRows(DEFAULT_ROWS)
     setReason(EDIT_REASONS[0])
@@ -114,6 +114,7 @@ export default function InputMappingPage() {
     setDirty(false)
     setSaved(false)
     setChangedIds(new Set())
+    navigate('/setup/load')
   }
 
   // Group rows by category for visual separation

@@ -73,7 +73,7 @@ export default function TopNav() {
           Study Setup
         </NavLink>
 
-        <NavLink to="/ct"              className={({ isActive }) => linkCls(isActive)}>Controlled Terminology</NavLink>
+        {user?.role === 'admin' && <NavLink to="/ct" className={({ isActive }) => linkCls(isActive)}>Controlled Terminology</NavLink>}
 
         {/* Output Generate ▼ */}
         <div className="relative" ref={outputRef}>

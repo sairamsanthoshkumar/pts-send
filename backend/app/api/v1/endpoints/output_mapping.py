@@ -6,10 +6,58 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_current_user
 from app.db.session import get_db
-from app.models.domain import OutputMapping
-from app.schemas.study import OutputMappingCreate, OutputMappingResponse
+from app.models.domain import OutputMapping, StudyFocusMapping
+from app.schemas.study import OutputMappingCreate, OutputMappingResponse, StudyFocusMappingCreate, StudyFocusMappingResponse
+from app.models.domain import RawMeasurement, SampleCollection
 
 router = APIRouter()
+
+@router.get("/focus/{study_id}", response_model=List[StudyFocusMappingResponse])
+async def list_focus_mappings(study_id: uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    result = await db.execute(select(StudyFocusMapping).where(StudyFocusMapping.study_id == study_id)
+                              .order_by(StudyFocusMapping.domain_code, StudyFocusMapping.source_value))
+    return result.scalars().all()
+
+@router.get("/focus/{study_id}/options")
+async def focus_mapping_options(study_id: uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    measurements = await db.execute(select(RawMeasurement).where(RawMeasurement.study_id == study_id))
+    rows = [record.row_data for record in measurements.scalars().all()]
+    samples = await db.execute(select(SampleCollection).where(SampleCollection.study_id == study_id))
+    sample_rows = [record.data for record in samples.scalars().all()]
+    unique = lambda values: sorted({str(value).strip() for value in values if value is not None and str(value).strip()})
+    return {
+        "clinical_sign": [{"category": category, "subcategory": subcategory, "locator": locator}
+                          for category, subcategory, locator in sorted({(
+                              str(row.get("CATEGORY") or row.get("CATEGORY_NAME") or "").strip(),
+                              str(row.get("SUBCATEGORY") or row.get("SUBCATEGORY_NAME") or "").strip(),
+                              str(row.get("CLLOC") or row.get("LOCATION") or row.get("LOCATOR") or "").strip())
+                              for row in rows if row.get("CLLOC") or row.get("LOCATION") or row.get("CATEGORY")})],
+        "dosing": unique(value for row in sample_rows for value in (
+            row.get("COLLECTION_SITE"), row.get("COLLECTION_SITE_NAME"), row.get("SITE"))),
+        "gross": [{"tissue": tissue, "locator": locator} for tissue, locator in sorted({(
+            str(row.get("MASPEC") or row.get("TISSUE") or "").strip(),
+            str(row.get("MALOC") or row.get("LOCATOR") or "").strip())
+            for row in rows if row.get("MASPEC") or row.get("TISSUE")})],
+        "micro": [{"tissue": tissue, "locator": locator} for tissue, locator in sorted({(
+            str(row.get("MISPEC") or row.get("TISSUE") or "").strip(),
+            str(row.get("MILOC") or row.get("LOCATOR") or "").strip())
+            for row in rows if row.get("MISPEC") or row.get("TISSUE")})],
+    }
+
+@router.post("/focus/{study_id}", response_model=StudyFocusMappingResponse, status_code=201)
+async def create_focus_mapping(study_id: uuid.UUID, body: StudyFocusMappingCreate,
+    db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    mapping = StudyFocusMapping(study_id=study_id, **body.model_dump())
+    db.add(mapping); await db.commit(); await db.refresh(mapping)
+    return mapping
+
+@router.delete("/focus/{study_id}/{mapping_id}", status_code=204)
+async def delete_focus_mapping(study_id: uuid.UUID, mapping_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    mapping = await db.get(StudyFocusMapping, mapping_id)
+    if not mapping or mapping.study_id != study_id:
+        raise HTTPException(status_code=404, detail="FOCID mapping not found")
+    await db.delete(mapping); await db.commit()
 
 # Default required variables per domain (from SEND IG 3.1)
 DOMAIN_REQUIRED_VARS = {

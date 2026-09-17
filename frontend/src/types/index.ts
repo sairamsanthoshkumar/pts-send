@@ -18,6 +18,10 @@ export interface CTMapping {
   ct_value?: string; ct_codelist?: string; mapped: boolean;
   status: 'Unmapped'|'Mapped'|'Suppressed';
 }
+export interface StudyFocusMapping {
+  id: string; study_id: string; domain_code: 'EX'|'CL'|'MA'|'MI'; fixed_type: 'Clinical Sign'|'Dosing'|'Gross'|'Micro'; source_value: string; focid: string;
+  category?: string; subcategory?: string; tissue_flag?: string; locator?: string;
+}
 export interface Domain {
   id: string; study_id: string; domain_code: string; domain_label?: string;
   record_count: number; status: 'Pending'|'Processing'|'Generated'|'Validated'|'Failed';

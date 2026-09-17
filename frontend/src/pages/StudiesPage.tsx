@@ -28,8 +28,8 @@ interface StudyJob {
 
 // ── Static options ─────────────────────────────────────────────────────────────
 const STATUS_OPTIONS  = ['Done', 'In Progress', 'Failed', 'Aborted', 'Queued']
-const TYPE_OPTIONS    = ['Pristima API', 'CSV Data Source', 'SEND Dataset', 'OpenVMS']
-const CONNECTOR_OPTIONS = ['Pristima API', 'CSV Data Source', 'SEND Dataset', 'OpenVMS']
+const TYPE_OPTIONS    = ['CSV Data Source', 'SEND Dataset', 'OpenVMS']
+const CONNECTOR_OPTIONS = ['CSV Data Source', 'SEND Dataset', 'OpenVMS']
 
 // ── Shared UI styles (PtsSEND-style) ────────────────────────────────────────────
 const inputCls  = 'border border-gray-300 rounded px-2 py-1 text-sm text-gray-700 focus:outline-none focus:border-blue-400 bg-white'
@@ -122,7 +122,7 @@ export default function StudiesPage() {
   const [jobTo,         setJobTo]         = useState('')
   const [statusFilter,  setStatusFilter]  = useState<string[]>([])
   const [typeFilter,    setTypeFilter]    = useState<string[]>([])
-  const [connector,     setConnector]     = useState('Pristima API')
+  const [connector,     setConnector]     = useState('CSV Data Source')
   const [latest10,      setLatest10]      = useState(true)   // FS8.1.5
   const [showIndividual,setShowIndividual]= useState(false)  // FS8.1.8
   const [outputJobsOnly,setOutputJobsOnly]= useState(false)  // FS8.2.8
@@ -213,7 +213,7 @@ export default function StudiesPage() {
   const handleAdditionalMeasData = () => {
     if (selected.size === 0) { setAlertMsg('Please select a study first.'); return }
     if (selected.size > 1)   { setAlertMsg('Please select only one study for Additional Measurement Data.'); return }
-    navigate(`/studies/${[...selected][0]}?tab=ingest`)
+    navigate(`/studies/${[...selected][0]}/measurements`)
   }
 
   // ── FS8.2.4 Abort Load ────────────────────────────────────────────────────────

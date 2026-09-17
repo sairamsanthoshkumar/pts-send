@@ -19,6 +19,7 @@ const PRISTIMA_MEASUREMENTS = [
   'Fetal Necropsy Observations',
   'Full Feeder Weights',
   'Generalized Measurement',
+  'Juvenile Weaning Day',
   'Gross Observations',
   'Indirect Dosing',
   'Laboratory Results',
@@ -120,7 +121,9 @@ export default function MeasurementSelectionPage() {
 
   // Determine source type from study (simplified — in prod from API)
   const isCsv = studyName.startsWith('Demo')
-  const allMeasurements = isCsv ? CSV_DOMAINS : PRISTIMA_MEASUREMENTS
+  const allMeasurements = isCsv
+    ? CSV_DOMAINS
+    : PRISTIMA_MEASUREMENTS.filter(measurement => measurement !== 'Generalized Measurement')
 
   // Shuttle state
   const [available,    setAvailable]    = useState<string[]>(allMeasurements)
@@ -151,6 +154,7 @@ export default function MeasurementSelectionPage() {
     setTimeout(() => setHlLeft(null), 300)
     setAvailable(p => p.filter(x => x !== item))
     setSelected(p => [...p, item])
+    if (item.toUpperCase() === 'JUVENILE WEANING DAY') setGenDomains(p => ({ ...p, [item]: 'SC' }))
     setFilterLeft('')
   }
 
@@ -195,7 +199,7 @@ export default function MeasurementSelectionPage() {
     setStudyName(name)
     setStudyDropOpen(false)
     const csv = name.startsWith('Demo')
-    const all = csv ? CSV_DOMAINS : PRISTIMA_MEASUREMENTS
+    const all = csv ? CSV_DOMAINS : PRISTIMA_MEASUREMENTS.filter(measurement => measurement !== 'Generalized Measurement')
     setAvailable(all)
     setSelected([])
     setGenDomains({})
@@ -215,6 +219,7 @@ export default function MeasurementSelectionPage() {
 
   const isGeneralized = (m: string) =>
     m === 'Generalized Measurement' || m.toLowerCase().includes('generalized')
+  const isJuvenileWeaningDay = (m: string) => m.toUpperCase() === 'JUVENILE WEANING DAY'
 
   return (
     <div className="min-h-screen" style={{ background: '#f0f4f8' }}>
@@ -402,7 +407,11 @@ export default function MeasurementSelectionPage() {
                   </div>
 
                   {/* FS13.1.3 — Domain dropdown for Generalized Measurement */}
-                  {isGeneralized(m) && (
+                  {isJuvenileWeaningDay(m) ? (
+                    <div style={{ padding: '3px 10px 6px 10px', fontSize: 11, color: '#2563eb', background: '#f8fafc' }}>
+                      Domain: SC (approved juvenile weaning-day data)
+                    </div>
+                  ) : isGeneralized(m) && (
                     <div style={{ padding: '3px 10px 6px 10px', display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc' }}>
                       <span style={{ fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap' }}>Domain:</span>
                       <select

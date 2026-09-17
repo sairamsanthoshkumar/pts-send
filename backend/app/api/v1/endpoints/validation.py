@@ -4,6 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.schemas.study import TaskResponse
@@ -25,8 +26,20 @@ async def run_validation(study_id: uuid.UUID, body: ValidateRequest,
     return TaskResponse(task_id=task.id, status="queued", message=f"Validation queued: {', '.join(body.domain_codes)}")
 
 @router.get("/{study_id}/results")
-async def get_validation_results(study_id: uuid.UUID, _=Depends(get_current_user)):
-    return {"study_id":str(study_id),"summary":{"errors":0,"warnings":2,"info":5},"results":[
-        {"rule_id":"SEND3.1-DM-001","severity":"Warning","domain":"DM","variable":"DMDTC","message":"2 records have DMDTC after RFSTDTC","row_numbers":[12,45]},
-        {"rule_id":"SEND3.1-BW-003","severity":"Warning","domain":"BW","variable":"BWSTRESU","message":"Unit 'grams' should be 'g' per CDISC CT","row_numbers":[88]},
-    ]}
+async def get_validation_results(study_id: uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    from app.models.domain import ValidationIssue
+    result = await db.execute(select(ValidationIssue).where(ValidationIssue.study_id == study_id)
+                              .order_by(ValidationIssue.domain, ValidationIssue.row_number, ValidationIssue.id))
+    issues = list(result.scalars().all())
+    grouped = {}
+    for issue in issues:
+        key = (issue.rule_id, issue.severity, issue.domain, issue.variable, issue.message)
+        grouped.setdefault(key, []).append(issue.row_number)
+    results = [{"rule_id": key[0], "severity": key[1], "domain": key[2], "variable": key[3],
+                "message": key[4], "row_numbers": [n for n in rows if n is not None]}
+               for key, rows in grouped.items()]
+    return {"study_id": str(study_id), "summary": {
+        "errors": sum(issue.severity == "Error" for issue in issues),
+        "warnings": sum(issue.severity == "Warning" for issue in issues),
+        "info": sum(issue.severity == "Info" for issue in issues),
+    }, "results": results}
