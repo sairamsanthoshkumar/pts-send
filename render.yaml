@@ -42,9 +42,9 @@ services:
           name: pts-send-redis
           property: connectionString
       - key: FRONTEND_URL
-        value: https://pts-send-frontend.onrender.com
+        value: https://pts-send-frontend-uuml.onrender.com
       - key: CORS_ORIGINS
-        value: '["https://pts-send-frontend.onrender.com","http://localhost:5173"]'
+        value: '["https://pts-send-frontend-uuml.onrender.com","https://pts-send-frontend.onrender.com","http://localhost:5173"]'
 
   # ── Celery worker ─────────────────────────────────────────
   - type: worker
