@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCTCodelists, getCTCodelistTerms, getCTVersions, importCTCsv, installBundledCT, installCdiscCT, removeCTVersion } from '../api/client'
 
 interface CTVersion {
@@ -312,6 +312,7 @@ const validateImportedCsv = (text: string) => {
 }
 
 export default function CTPage() {
+  const queryClient = useQueryClient()
   const packageFileInputRef = useRef<HTMLInputElement | null>(null)
   const csvFileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedVersion, setSelectedVersion] = useState<string>('')
@@ -735,7 +736,9 @@ export default function CTPage() {
     if (!file) return
 
     try {
-      const result = await importCTCsv(file)
+      const result = await importCTCsv(file, selectedVersion)
+      await queryClient.invalidateQueries({ queryKey: ['ct-codelists', selectedVersion] })
+      await queryClient.invalidateQueries({ queryKey: ['ct-codelist-terms', selectedVersion, selectedType] })
       window.alert(result.data?.message || 'Controlled terminology CSV imported successfully.')
     } catch (error: any) {
       window.alert(error?.response?.data?.detail || 'Unable to import controlled terminology CSV.')
@@ -1323,6 +1326,7 @@ export default function CTPage() {
                 Back
               </button>
             </div>
+            <input ref={csvFileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleUploadCsv} />
           </div>
         </div>
 

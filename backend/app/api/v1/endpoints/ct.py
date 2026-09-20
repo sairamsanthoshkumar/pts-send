@@ -389,10 +389,16 @@ async def export_ct_csv(version: Optional[str] = Query(None), db: AsyncSession =
 
 
 @router.post("/import-csv", summary="FS24.2.3 – Import CT data from CSV")
-async def import_ct_csv(file: UploadFile = File(...), _=Depends(require_admin)):
+async def import_ct_csv(
+    file: UploadFile = File(...),
+    version: str = Form(""),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_admin),
+):
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported.")
 
+    resolved_version = await _resolve_version(db, version.strip() or None)
     content = await file.read()
     text = content.decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(text))
@@ -424,18 +430,53 @@ async def import_ct_csv(file: UploadFile = File(...), _=Depends(require_admin)):
         value_key = (row.get("Value Key") or "").strip()
         name_in_data = (row.get("Name in Data") or "").strip()
 
-        if value_key:
+        codelist_code = (row.get("Codelist Code") or "").strip().upper()
+        code = (row.get("Code") or "").strip()
+        if not codelist_code or not code:
+            raise HTTPException(status_code=422, detail="Each imported CT row requires Codelist Code and Code.")
+
+        term = await db.scalar(select(CTInstalledTerm).where(
+            CTInstalledTerm.version == resolved_version,
+            CTInstalledTerm.codelist_code == codelist_code,
+            CTInstalledTerm.code == code,
+        ))
+        if term:
+            term.codelist_name = (row.get("Codelist Name") or term.codelist_name or codelist_code).strip()
+            term.codelist_extensible = (row.get("Codelist Extensible") or term.codelist_extensible or "").strip()
+            term.submission_value = (row.get("Submission Value") or "").strip()
+            term.name_in_data = name_in_data
+            term.value_key = value_key
+            term.action = action
             updated += 1
-            # If Value Key exists, a Name in Data mapping is being edited/updated.
-            # The actual term is keyed by codelist + code and remains otherwise unchanged.
         else:
+            db.add(CTInstalledTerm(
+                version=resolved_version,
+                codelist_code=codelist_code,
+                codelist_name=(row.get("Codelist Name") or codelist_code).strip(),
+                codelist_extensible=(row.get("Codelist Extensible") or "").strip(),
+                code=code,
+                submission_value=(row.get("Submission Value") or "").strip(),
+                name_in_data=name_in_data,
+                value_key=value_key,
+                action=action,
+                description=(row.get("Description") or "").strip(),
+            ))
             added += 1
-            # If Value Key is empty and ACTION is A/E, new Name in Data mapping is added.
-            # If Name in Data is empty, it is still accepted as a row-level add with no mapping.
+
+    if processed:
+        db.add(AuditLog(
+            user_id=current_user.get("sub"),
+            action="IMPORT_CT_CSV",
+            resource_type="controlled_terminology",
+            resource_id=resolved_version,
+            reason="Controlled terminology CSV import",
+            delta={"version": resolved_version, "processed_rows": processed, "added": added, "updated": updated},
+        ))
+    await db.commit()
 
     return {
         "status": "ok",
-        "version": "latest",
+        "version": resolved_version,
         "processed_rows": processed,
         "added": added,
         "updated": updated,
