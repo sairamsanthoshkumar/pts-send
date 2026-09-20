@@ -47,6 +47,11 @@ export const installCdiscCT = (file: File, version: string, previousVersion: str
   return api.post('/ct/install-cdisc', form, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
 export const exportCTCsv = (version?: string) => api.get('/ct/export-csv', { params: version ? { version } : {}, responseType: 'blob' })
+export const importCTCsv = (file: File) => {
+  const form = new FormData()
+  form.append('file', file)
+  return api.post('/ct/import-csv', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
 export const removeCTVersion = (version: string) => api.delete(`/ct/versions/${encodeURIComponent(version)}`)
 export const getCTMappings = (params?: Record<string,string>) => api.get('/ct/mappings', { params })
 export const updateCTMapping = (id: string, data: Record<string,unknown>) => api.patch(`/ct/mappings/${id}`, data)

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { exportCTCsv, getCTCodelists, getCTCodelistTerms, getCTVersions, installBundledCT, installCdiscCT, removeCTVersion } from '../api/client'
+import { getCTCodelists, getCTCodelistTerms, getCTVersions, importCTCsv, installBundledCT, installCdiscCT, removeCTVersion } from '../api/client'
 
 interface CTVersion {
   version: string
@@ -313,6 +313,7 @@ const validateImportedCsv = (text: string) => {
 
 export default function CTPage() {
   const packageFileInputRef = useRef<HTMLInputElement | null>(null)
+  const csvFileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [selectedType, setSelectedType] = useState<string>('')
   const [showCsvPreview, setShowCsvPreview] = useState<boolean>(true)
@@ -402,7 +403,9 @@ export default function CTPage() {
   }, [codelists, selectedType])
 
   const selectedReasonValid = selectedEditReason.trim().length > 0
-  const isExtensibleType = codelists.some(item => item.codelist === selectedType && item.extensible === 'Y')
+  const selectedCodelist = codelists.find(item => item.codelist === selectedType)
+  const isExtensibleType = selectedCodelist?.extensible !== 'N'
+  const extensibleLabel = selectedCodelist?.extensible === 'N' ? 'NO' : 'YES'
   const isSpecOrLocType = selectedType === 'SPEC' || selectedType === 'LOC'
   const isFindingType = selectedType === 'FXFINDRS' || selectedType === 'NEOPLASM' || selectedType === 'NONNEO'
   const existingCodes = Array.from(new Set(ctRows.map(row => row.code))).sort()
@@ -430,7 +433,7 @@ export default function CTPage() {
         resultModifiers: row.resultModifiers ?? '',
         resultLocation: row.resultLocation ?? '',
         resultCategory: row.resultCategory ?? '',
-        reason: '',
+        reason: EDIT_REASONS[0],
       })
       setNewCodeChoice('')
       setNewCodeValue('')
@@ -457,7 +460,7 @@ export default function CTPage() {
         resultModifiers: '',
         resultLocation: '',
         resultCategory: '',
-        reason: '',
+        reason: EDIT_REASONS[0],
       })
       setNewCodeChoice(isExtensibleType ? 'new' : initialCode)
       setNewCodeValue('')
@@ -536,7 +539,13 @@ export default function CTPage() {
     }
   }
 
-  const filteredRows = ctRows.filter((row) => {
+  const sortedRows = [...ctRows].sort((left, right) => {
+    const codeOrder = left.code.localeCompare(right.code, undefined, { numeric: true, sensitivity: 'base' })
+    if (codeOrder !== 0) return codeOrder
+    return left.submissionValue.localeCompare(right.submissionValue, undefined, { sensitivity: 'base' })
+  })
+
+  const filteredRows = sortedRows.filter((row) => {
     if (!wildcard.trim()) return true
     const searchable = selectedColumns.map(column => getCellValue(row, column))
     return searchable.some(value => value.toLowerCase().includes(wildcard.trim().toLowerCase()))
@@ -630,6 +639,7 @@ export default function CTPage() {
   }
 
   const handleAdd = () => {
+    if (!isExtensibleType) return
     openCreateModal()
   }
 
@@ -647,10 +657,6 @@ export default function CTPage() {
     }
     if (!formState.submissionValue.trim()) {
       window.alert('Please enter a submission value before saving.')
-      return
-    }
-    if (!formState.nameInData.trim()) {
-      window.alert('Please enter a name in data before saving.')
       return
     }
     if (!formState.reason.trim()) {
@@ -684,7 +690,7 @@ export default function CTPage() {
       window.alert(`Saved changes for ${finalCode} with audit reason: ${formState.reason}`)
     } else {
       setCtRows(current => [...current, nextRow])
-      window.alert(`Added new CT record ${finalCode} with audit reason: ${formState.reason}`)
+      window.alert('Added successfully')
     }
 
     closeCreateModal()
@@ -697,7 +703,7 @@ export default function CTPage() {
     if (!confirmed) return
 
     setCtRows(current => current.filter(row => row !== selectedRowForEdit))
-    window.alert(`Deleted ${selectedRowForEdit.code} with audit reason: ${formState.reason || 'delete record'}`)
+    window.alert('Deleted successfully')
     closeCreateModal()
   }
 
@@ -717,6 +723,24 @@ export default function CTPage() {
     } catch (error) {
       console.error('CT export failed', error)
       window.alert('Unable to export CT CSV.')
+    }
+  }
+
+  const handleImport = () => {
+    csvFileInputRef.current?.click()
+  }
+
+  const handleUploadCsv = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const result = await importCTCsv(file)
+      window.alert(result.data?.message || 'Controlled terminology CSV imported successfully.')
+    } catch (error: any) {
+      window.alert(error?.response?.data?.detail || 'Unable to import controlled terminology CSV.')
+    } finally {
+      event.target.value = ''
     }
   }
 
@@ -1143,7 +1167,7 @@ export default function CTPage() {
           <div className="space-y-4">
             <div className="rounded-2xl border border-sky-100 bg-white/80 p-5 shadow-[0_20px_50px_rgba(14,116,144,0.08)] backdrop-blur-sm">
               <div className="text-center text-[18px] font-semibold text-slate-700 mb-2">
-                Controlled Terminology Submission for Type - {selectedType}, Extensible - YES
+                Controlled Terminology Submission for Type - {selectedType}, Extensible - {extensibleLabel}
               </div>
               <div className="text-center text-[18px] font-medium text-sky-700">
                 {selectedVersion}
@@ -1289,7 +1313,10 @@ export default function CTPage() {
               <button type="button" className="h-[44px] min-w-[150px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg" onClick={handleExport}>
                 Export to CSV
               </button>
-              <button type="button" aria-label="Add" className="h-[44px] min-w-[150px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg" onClick={handleAdd}>
+              <button type="button" className="h-[44px] min-w-[150px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg" onClick={handleImport}>
+                Import from CSV
+              </button>
+              <button type="button" aria-label="Add" disabled={!isExtensibleType} className="h-[44px] min-w-[150px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50" onClick={handleAdd}>
                 Add
               </button>
               <button type="button" className="h-[44px] min-w-[150px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg" onClick={handleBack}>
@@ -1372,6 +1399,9 @@ export default function CTPage() {
               <button type="button" className="h-[44px] min-w-[140px] rounded-xl border border-sky-400 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-medium shadow-lg shadow-sky-200 transition hover:brightness-105" onClick={handleNext}>
                 Next
               </button>
+              <button type="button" className="h-[44px] min-w-[160px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg" onClick={handleImport}>
+                Import from CSV
+              </button>
               <button type="button" className="h-[44px] min-w-[140px] rounded-xl border border-sky-400 bg-white text-sky-600 font-medium shadow-md shadow-sky-100 transition hover:-translate-y-0.5 hover:shadow-lg" onClick={handleEdit}>
                 Edit
               </button>
@@ -1384,6 +1414,7 @@ export default function CTPage() {
             </div>
 
             <input ref={packageFileInputRef} type="file" accept=".txt" className="hidden" onChange={handleUploadPackageFile} />
+            <input ref={csvFileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleUploadCsv} />
           </>
         ) : (
           <div className="space-y-5">
